@@ -5,83 +5,97 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     // Player movement variables
-    [SerializeField] private float movementLerpFactor = 1.0f;
-
+    private Vector3 centerPosition;
     private Vector3 displacement;
     private Vector3 velocity;
 
+    [Header("Movement")]
     [SerializeField] private float maxVelocity = 2.0f;
     [SerializeField] private float acceleration = 2.0f;
-    [SerializeField] private float edgeDistanceCutoff = 1.0f;
-    [SerializeField] private float rotationSpeed = 1f;
 
-    // Stores the last good player mouse pos
-    private Vector3 lastHitPosition;
+    [Space]
+
+    [Header("Restraints")]
+    [SerializeField] private Vector2 playerBounds;
+    private Vector3 relativeMousePosition;
+
+    [Space]
+
+    // Player rotation variables
+    private Vector3 lookPosition;
+    private int layerMask = 1 << 8;
+
+    [Header("Rotation")]
+    [SerializeField] private float maxLookRange;
+    [SerializeField] private float rotationSpeed = 1f;
 
     // Reference to the tracking objects for the player
     private GameObject railFollower;
-    private GameObject targetPlane;
     private GameObject playerModel;
 
     // Camera vars
     private Camera cam;
-    [SerializeField] private Vector2 cameraBounds;
 
     private void MovePlayer()
     {
-	// Raycast variables from camera to point in world space
+	// Get the mouse position relative to the center of the screen
+	relativeMousePosition.x = -1.0f + Input.mousePosition.x * 2.0f / Screen.width;
+	relativeMousePosition.y = -1.0f + Input.mousePosition.y * 2.0f / Screen.height;
+
+	// Get the displacement from the player's position it needs to move
+	displacement = new Vector3
+	(
+	    relativeMousePosition.x * playerBounds.x,
+	    relativeMousePosition.y * playerBounds.y,
+	    0
+	);
+
+	// Set the player's velocity to a fraction of the displacement
+	velocity = displacement * acceleration;
+
+	// Clamp the velocity to be under maxVelocity
+	velocity = Vector3.ClampMagnitude(velocity, maxVelocity);
+
+	// Change the player's position based on the velocity
+	transform.position += velocity * Time.fixedDeltaTime;
+
+	// Clamp the position to be inside the playerBounds
+	if (transform.position.x > centerPosition.x + playerBounds.x)
+	    transform.position = new Vector3(centerPosition.x + playerBounds.x, transform.position.y, transform.position.z);
+	else if (transform.position.x < centerPosition.x - playerBounds.x)
+	    transform.position = new Vector3(centerPosition.x - playerBounds.x, transform.position.y, transform.position.z);
+
+	if (transform.position.y > centerPosition.y + playerBounds.y)
+	    transform.position = new Vector3(transform.position.x, centerPosition.y + playerBounds.y, transform.position.z);
+	else if (transform.position.y < centerPosition.y - playerBounds.y)
+	    transform.position = new Vector3(transform.position.x, centerPosition.y - playerBounds.y, transform.position.z);
+    }
+
+    private void RotatePlayer()
+    {
+	// Make a ray from the camera to a point some distance away
 	RaycastHit hit;
 	Ray ray = cam.ScreenPointToRay(Input.mousePosition);
 
-	// Check the hit object == the target plane
-	if (Physics.Raycast(ray, out hit) && hit.collider.tag == "TargetPlane")
+	// Raycast along that ray for maxLookRange, ignoring the player
+	if (Physics.Raycast(ray, out hit, maxLookRange, layerMask))
 	{
-	    // Store the hit position
-	    lastHitPosition = hit.point;
-
-	    // Calculate the displacement 
-	    Vector3 planarPosition = new Vector3(hit.point.x, hit.point.y, transform.position.z);
-	    displacement = Vector3.Lerp(transform.position, planarPosition, movementLerpFactor * Time.fixedDeltaTime);
-
-	    // Accelerate the body
-	    velocity += (displacement - transform.position) * acceleration;
-
-	    // Clamp the velocity
-	    if (velocity.magnitude > maxVelocity)
-	    {
-		velocity = velocity.normalized * maxVelocity;
-	    }
+	    // Set the rotation to face that ray
+	    playerModel.transform.rotation = Quaternion.RotateTowards(
+	        playerModel.transform.rotation, 
+	        Quaternion.LookRotation((hit.point - playerModel.transform.position).normalized), 
+	        Mathf.Deg2Rad * rotationSpeed * (1.0f / Time.fixedDeltaTime)
+	    );
 	}
 	else
 	{
-	    // Do the same as above but with the last hit position instead
-	    Vector3 planarPosition = new Vector3(lastHitPosition.x, lastHitPosition.y, transform.position.z);
-	    displacement = Vector3.Lerp(transform.position, planarPosition, movementLerpFactor);
-
-	    // Check to see if we should stop using acceleration and just manually set the velocity
-	    if ((planarPosition - transform.position).magnitude > edgeDistanceCutoff)
-	    {
-		velocity += displacement - transform.position;
-	    	if (velocity.magnitude > maxVelocity)
-	    	{
-	    	    velocity = velocity.normalized * maxVelocity;
-	    	}
-	    }
-	    else
-	    {
-		velocity = displacement - transform.position;
-	    	if (velocity.magnitude > maxVelocity)
-	    	{
-	    	    velocity = velocity.normalized * maxVelocity;
-	    	}
-	    }
+	    // Set the rotation back to normal
+	    playerModel.transform.rotation = Quaternion.RotateTowards(
+	        playerModel.transform.rotation, 
+	        Quaternion.LookRotation(Vector3.forward), 
+	        Mathf.Deg2Rad * rotationSpeed * (1.0f / Time.fixedDeltaTime)
+	    );
 	}
-
-	// Add the velocity to the position to move the player
-	transform.position += velocity * Time.fixedDeltaTime;
-
-	// Rotate the player to face the point it's traveling towards
-	// playerModel.transform.rotation = Quaternion.RotateTowards(playerModel.transform.rotation, Quaternion.LookRotation(hit.point), Mathf.Deg2Rad * rotationSpeed * Time.fixedDeltaTime);
     }
 
     // Start is called before the first frame update
@@ -89,13 +103,18 @@ public class PlayerController : MonoBehaviour
     {
 	// Get the objects by tag
 	railFollower = GameObject.FindGameObjectWithTag("RailFollower");
-	targetPlane = GameObject.FindGameObjectWithTag("TargetPlane");
 
 	// Get the camera
 	cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
 	
 	// Get the player model object
 	playerModel = GameObject.FindGameObjectWithTag("Model");
+
+	// Get the player's initial position and screen center
+	centerPosition = new Vector3(transform.position.x, transform.position.y, 0);
+
+	// Set the layer mask
+	layerMask = ~layerMask;
     }
 
 
@@ -103,6 +122,7 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
 	MovePlayer();
+	RotatePlayer();
     }
 
     void OnCollisionEnter(Collision collision)

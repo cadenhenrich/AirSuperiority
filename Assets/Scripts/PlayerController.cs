@@ -104,6 +104,11 @@ public class PlayerController : MonoBehaviour
 	playerModel.transform.localEulerAngles = currentRotation;
     }
 
+    public Vector2 GetBounds()
+    {
+	return playerBounds;
+    }
+
     // Start is called before the first frame update
     void Start()
     {

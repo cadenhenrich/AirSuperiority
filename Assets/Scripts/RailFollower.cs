@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class RailFollower : MonoBehaviour
 {
+    [Header("Settings")]
     [SerializeField] private float forwardSpeed = 1;
 
     // Fixed Update is called every physics iteration (50 times a sec)

@@ -37,6 +37,12 @@ public class PlayerController : MonoBehaviour
     // Camera vars
     private Camera cam;
 
+    // Shooting mechanics
+    [Header("Shooting")]
+    [SerializeField] private GameObject projectile;
+    [SerializeField] private float projectileSpeed;
+    [SerializeField] private float projectileGravity;
+
     private void MovePlayer()
     {
 	// Get the mouse position relative to the center of the screen
@@ -107,6 +113,11 @@ public class PlayerController : MonoBehaviour
     public Vector2 GetBounds()
     {
 	return playerBounds;
+    }
+
+    void Shoot()
+    {
+
     }
 
     // Start is called before the first frame update

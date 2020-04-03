@@ -38,12 +38,12 @@ public class CameraFollow : MonoBehaviour
 	// Clamp the camera to the cameraBounds
 	if (transform.position.x > centerPosition.x + cameraBounds.x)
 	    transform.position = new Vector3(centerPosition.x + cameraBounds.x, transform.position.y, transform.position.z);
-	else if (transform.position.x < -cameraBounds.x)
+	else if (transform.position.x < centerPosition.x - cameraBounds.x)
 	    transform.position = new Vector3(centerPosition.x - cameraBounds.x, transform.position.y, transform.position.z);
 
 	if (transform.position.y > centerPosition.y + cameraBounds.y)
 	    transform.position = new Vector3(transform.position.x, centerPosition.y + cameraBounds.y, transform.position.z);
-	else if (transform.position.y < -cameraBounds.y)
+	else if (transform.position.y < centerPosition.y - cameraBounds.y)
 	    transform.position = new Vector3(transform.position.x, centerPosition.y - cameraBounds.y, transform.position.z);
     }
 }

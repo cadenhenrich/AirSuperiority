@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
     [Header("Rotation")]
     [SerializeField] private float maxLookRange;
     [SerializeField] private float rotationSpeed = 1f;
+    [SerializeField] private float maxRoll = 15f;
 
     // Reference to the tracking objects for the player
     private GameObject railFollower;
@@ -96,6 +97,11 @@ public class PlayerController : MonoBehaviour
 	        Mathf.Deg2Rad * rotationSpeed * (1.0f / Time.fixedDeltaTime)
 	    );
 	}
+
+	// Roll the player based on their current velocity along the x-axis
+	Vector3 currentRotation = playerModel.transform.localEulerAngles;
+	currentRotation.z = (-velocity.x / maxVelocity) * maxRoll;
+	playerModel.transform.localEulerAngles = currentRotation;
     }
 
     // Start is called before the first frame update

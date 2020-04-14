@@ -7,6 +7,11 @@ public class RailFollower : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private float forwardSpeed = 1;
 
+    public float GetForwardSpeed()
+    {
+	return forwardSpeed;
+    }
+
     // Fixed Update is called every physics iteration (50 times a sec)
     void FixedUpdate()
     {

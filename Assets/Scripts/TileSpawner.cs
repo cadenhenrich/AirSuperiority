@@ -10,8 +10,6 @@ public class TileSpawner : MonoBehaviour
     [Header("Tile References")]
     [SerializeField] private GameObject cityTile;
     [SerializeField] private GameObject factoryTile;
-    [SerializeField] private GameObject blankTile;
-    [SerializeField] private GameObject craterTile;
 
     [Space]
 

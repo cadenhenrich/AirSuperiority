@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -39,9 +40,24 @@ public class PlayerController : MonoBehaviour
 
     // Shooting mechanics
     [Header("Shooting")]
-    [SerializeField] private GameObject projectile;
-    [SerializeField] private float projectileSpeed;
-    [SerializeField] private float projectileGravity;
+    [SerializeField] private GameObject gatlingBullet;
+    [SerializeField] private float gatlingFireSpeed;
+    [SerializeField] private float gatlingForwardOffset;
+    private float gatlingTimer = 0.1f;
+    private GameObject gatlingGunR;
+    private GameObject gatlingGunL;
+    private bool fireRight;
+
+    // Keep track of points
+    private float points = 0f;
+
+    // Health
+    [SerializeField] private float health;
+    private Text healthText;
+
+    private Text scoreText;
+
+    private AudioSource audioSource;
 
     private void MovePlayer()
     {
@@ -115,9 +131,56 @@ public class PlayerController : MonoBehaviour
 	return playerBounds;
     }
 
-    void Shoot()
+    // Shoot the gatling gun
+    private void ShootGatling()
     {
+	// Check for the timer
+	if (gatlingTimer <= 0)
+	{
+	    // Spawn the bullet with offset and angle
+	    if (fireRight)
+		Instantiate(gatlingBullet, gatlingGunR.transform.position, playerModel.transform.rotation);
+	    else
+		Instantiate(gatlingBullet, gatlingGunL.transform.position, playerModel.transform.rotation);
 
+	    fireRight = !fireRight;
+
+	    // Reset the timer
+	    gatlingTimer = 1.0f / gatlingFireSpeed;
+
+	    audioSource.Play();
+
+	    // Skip lowering the timer this frame
+	    return;
+	}
+
+	// Lower the timer
+	gatlingTimer -= Time.fixedDeltaTime;
+    }
+
+    public void AddPoints(float newPoints)
+    {
+	points += newPoints;
+
+	scoreText.text = "" + points;
+    }
+
+    public float getPoints()
+    {
+	return points;
+    }
+
+    public void takeDamage(float damage)
+    {
+	health -= damage;
+
+	if (health <= 0)
+	{
+	    Destroy(gameObject);
+	    return;
+	}
+
+	healthText.text = "" + health;
     }
 
     // Start is called before the first frame update
@@ -137,18 +200,28 @@ public class PlayerController : MonoBehaviour
 
 	// Set the layer mask
 	layerMask = ~layerMask;
+
+	// Set gatlings
+	gatlingGunR = GameObject.Find("GatlingGunR");
+	gatlingGunL = GameObject.Find("GatlingGunL");
+
+	healthText = GameObject.FindGameObjectWithTag("HealthText").GetComponent<Text>();
+
+	scoreText = GameObject.Find("ScoreText").GetComponent<Text>();
+
+	audioSource = GetComponent<AudioSource>();
     }
 
 
     // FixedUpdate is called every physics cycle (50 times per sec)
     void FixedUpdate()
     {
+	// Move and rotate player
 	MovePlayer();
 	RotatePlayer();
-    }
 
-    void OnCollisionEnter(Collision collision)
-    {
-	Debug.Log("OUCH OOF OWIE THAT HURT");
+	// Conditionally fire gatling guns
+	if (Input.GetButton("Fire1"))
+	    ShootGatling();
     }
 }
